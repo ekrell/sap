@@ -91,9 +91,11 @@ class DB(object):
         # Write a newline char version to a tmp file:
         fileContent = readFile(self.fastaFileName)
         fileContent = re.sub(r'\r+', '\n', fileContent)
-        tmpFile, tmpFileName = tempfile.mkstemp()
+        #tmpFile, tmpFileName = tempfile.mkstemp()
+        tmpFileName = "SAPPY.temp.fasta"
         writeFile(tmpFileName, fileContent)
         self.fastaFileName = tmpFileName
+        print "\n"
 
         # # Create a new shelve:
         # db = shelve.open(self.dbFileName, 'n')
@@ -101,6 +103,8 @@ class DB(object):
         # Create an iterator over fasta entries:
         fastaFile = open(self.fastaFileName, 'r')
         fastaIterator = Fasta.Iterator(fastaFile, parser=Fasta.RecordParser())        
+        print fastaFile
+#        exit (0)
 
         allowedLetters = IUPAC.IUPACAmbiguousDNA().letters
 
@@ -119,27 +123,31 @@ class DB(object):
                 identifier, taxonomyString, organismName = re.split(r'\s*;\s*', fastaRecord.title.strip())
                 taxonomy.populateFromString(taxonomyString)
                 taxonomy.organism = organismName
-            except (ValueError, Taxonomy.ParsingError) as exc:
-                raise WrongFormatError(fastaRecord.title)
-            if not (identifier and taxonomyString and organismName):
-                raise WrongFormatError(fastaRecord.title)
 
-            # Add an entry to the index:
-            for taxonomyLevel in taxonomy:
-                index.setdefault(taxonomyLevel.name, []).append(identifier)
+            #except (ValueError, Taxonomy.ParsingError) as exc:
+                #raise WrongFormatError(fastaRecord.title)
+            #if not (identifier and taxonomyString and organismName):
+                #raise WrongFormatError(fastaRecord.title)
 
-            # taxonomySummary.addTaxonomy(taxonomy)
+                # Add an entry to the index:
+                for taxonomyLevel in taxonomy:
+                    index.setdefault(taxonomyLevel.name, []).append(identifier)
 
-            # Uppercase and replace wildcard letters with Ns:
-            fastaRecord.sequence = fastaRecord.sequence.upper()
-            fastaRecord.sequence = re.sub('[^%s-]' % allowedLetters, 'N', fastaRecord.sequence)
+                # taxonomySummary.addTaxonomy(taxonomy)
 
-            # Write the sequence without gaps to the blast file:
-            fastaRecord.sequence = fastaRecord.sequence.replace('-', '')
-            blastSequenceFile.write(str(fastaRecord))
+                # Uppercase and replace wildcard letters with Ns:
+                fastaRecord.sequence = fastaRecord.sequence.upper()
+                fastaRecord.sequence = re.sub('[^%s-]' % allowedLetters, 'N', fastaRecord.sequence)
+
+                # Write the sequence without gaps to the blast file:
+                fastaRecord.sequence = fastaRecord.sequence.replace('-', '')
+                blastSequenceFile.write(str(fastaRecord))
+
+            except:
+                pass
 
         # remove tmp files:
-        os.close(tmpFile)
+        #os.close(tmpFile)
         os.unlink(tmpFileName)
 
         # Close the fasta file:
